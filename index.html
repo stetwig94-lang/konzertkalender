@@ -152,6 +152,7 @@ button.day.selected { outline: 2px solid var(--ink); outline-offset: 2px; }
 }
 .songs .none { color: var(--muted); }
 .songs .none::before { display: none; }
+.player { display: block; width: 100%; max-width: 100%; border: 0; border-radius: 12px; margin-bottom: 10px; }
 .actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
@@ -293,6 +294,18 @@ footer { margin-top: 40px; font-size: 13px; color: var(--muted); }
     return rows;
   }
 
+  /* Spotify: nimmt Embed-Link, normalen Link oder kompletten Iframe-Code aus der Tabelle */
+  function spotifyUrl(u) {
+    u = (u || '').trim();
+    var m = u.match(/src=["']([^"']+)["']/i);
+    if (m) u = m[1].replace(/&amp;/g, '&');
+    return safeUrl(u);
+  }
+  function spotifyParts(u) {
+    var m = (u || '').match(/open\.spotify\.com\/(?:embed\/)?(?:intl-[a-z-]+\/)?(playlist|album|artist|track|show|episode)\/([A-Za-z0-9]+)/);
+    return m ? { type: m[1], id: m[2] } : null;
+  }
+
   function normDate(s) {
     s = (s || '').trim();
     var m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
@@ -342,7 +355,7 @@ footer { margin-top: 40px; font-size: 13px; color: var(--muted); }
         venue: get(r, 'venue'), city: get(r, 'city'), genre: get(r, 'genre') || 'Konzert',
         tour: get(r, 'info'), why: '',
         songs: songs ? songs.split(';').map(function (x) { return x.trim(); }).filter(Boolean) : [],
-        spotify: safeUrl(get(r, 'spotify')), tickets: safeUrl(get(r, 'tickets')), ticketLabel: 'Tickets und Infos'
+        spotify: spotifyUrl(get(r, 'spotify')), tickets: safeUrl(get(r, 'tickets')), ticketLabel: 'Tickets und Infos'
       });
     }
     return out;
@@ -417,7 +430,11 @@ footer { margin-top: 40px; font-size: 13px; color: var(--muted); }
       var songs = e.songs.length
         ? e.songs.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('')
         : '<li class="none">Meine Lieblingssongs folgen.</li>';
-      var spotify = e.spotify || ('https://open.spotify.com/search/' + encodeURIComponent(e.artist));
+      var sp = spotifyParts(e.spotify);
+      var spotify = sp ? 'https://open.spotify.com/' + sp.type + '/' + sp.id : (e.spotify || ('https://open.spotify.com/search/' + encodeURIComponent(e.artist)));
+      var player = sp
+        ? '<iframe class="player" src="https://open.spotify.com/embed/' + sp.type + '/' + sp.id + '?utm_source=generator" width="100%" height="' + ((sp.type === 'track' || sp.type === 'episode') ? 152 : 352) + '" loading="lazy" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" title="Spotify: ' + esc(e.artist) + '"></iframe>'
+        : '';
       var cal = calUrl(e);
       var when = e.time ? esc(e.time) + ' Uhr' : 'Uhrzeit folgt';
       return '<details class="ticket" id="ev-' + esc(e.id) + '" data-id="' + esc(e.id) + '"' + (e.id === selected ? ' open' : '') + '>' +
@@ -430,7 +447,7 @@ footer { margin-top: 40px; font-size: 13px; color: var(--muted); }
         '<div class="detail">' +
           (e.tour ? '<p class="why">' + esc(e.tour) + '</p>' : '') +
           (e.why ? '<p class="why">' + esc(e.why) + '</p>' : '') +
-          '<div><p class="label">Meine Lieblingssongs</p><ul class="songs">' + songs + '</ul></div>' +
+          '<div><p class="label">Meine Lieblingssongs</p>' + player + ((e.songs.length || !player) ? '<ul class="songs">' + songs + '</ul>' : '') + '</div>' +
           '<div class="actions">' +
             (e.tickets ? '<a class="btn primary" href="' + esc(e.tickets) + '" target="_blank" rel="noopener noreferrer">' + esc(e.ticketLabel || 'Tickets ansehen') + '</a>' : '') +
             '<a class="btn ghost" href="' + esc(spotify) + '" target="_blank" rel="noopener noreferrer">Auf Spotify anhören</a>' +
