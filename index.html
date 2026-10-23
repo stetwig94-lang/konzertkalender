@@ -1,0 +1,393 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Konzertkalender</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: Monatskalender links (mitlaufend), Ticket-Abschnitte rechts, mobil untereinander */
+:root {
+  --bg: #E8EAEE;
+  --surface: #F7F8FA;
+  --ink: #12141C;
+  --muted: #565B6B;
+  --line: #C6CAD4;
+  --accent: #D6006F;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #F9D3E6;
+  --font-display: 'Bricolage Grotesque', 'Arial Narrow', system-ui, sans-serif;
+  --font-body: 'Instrument Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'DM Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111319;
+    --surface: #1B1E27;
+    --ink: #F0F1F5;
+    --muted: #A2A7B6;
+    --line: #333745;
+    --accent: #FF4DA6;
+    --accent-ink: #14161E;
+    --accent-soft: #4A1D37;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111319;
+  --surface: #1B1E27;
+  --ink: #F0F1F5;
+  --muted: #A2A7B6;
+  --line: #333745;
+  --accent: #FF4DA6;
+  --accent-ink: #14161E;
+  --accent-soft: #4A1D37;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  padding-block: 32px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1080px; margin: 0 auto; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Kopf */
+header { display: grid; gap: 12px; margin-bottom: 28px; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+h1 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(2.6rem, 9vw, 5rem);
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  margin: 0;
+  text-wrap: balance;
+}
+h1 span { color: var(--accent); }
+.intro { max-width: 60ch; margin: 0; color: var(--muted); font-size: 1.05rem; }
+.demo-note {
+  font-size: 14px;
+  background: var(--accent-soft);
+  border-radius: 8px;
+  padding: 10px 14px;
+  max-width: 64ch;
+}
+
+/* Raster */
+.layout { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 32px; align-items: start; }
+@media (max-width: 860px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+/* Kalender */
+.cal { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; position: sticky; top: 16px; }
+@media (max-width: 860px) { .cal { position: static; } }
+.cal-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+.cal-title { font-family: var(--font-display); font-weight: 800; font-size: 1.35rem; letter-spacing: -0.01em; }
+.cal-nav { display: flex; gap: 6px; }
+.icon-btn {
+  width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--line);
+  background: transparent; color: var(--ink); cursor: pointer; font-size: 18px; line-height: 1;
+  display: grid; place-items: center;
+}
+.icon-btn:hover { border-color: var(--ink); }
+.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.wd { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); text-align: center; padding-bottom: 4px; }
+.day {
+  aspect-ratio: 1 / 1; max-width: 100%;
+  display: grid; place-items: center;
+  font-family: var(--font-mono); font-size: 13px;
+  border-radius: 8px; border: 1px solid transparent; background: transparent; color: var(--ink);
+  padding: 0;
+}
+.day.muted { color: var(--muted); opacity: 0.5; }
+.day.today { border-color: var(--muted); }
+button.day { cursor: pointer; background: var(--accent); color: var(--accent-ink); font-weight: 500; }
+button.day:hover { filter: brightness(1.08); }
+button.day.selected { outline: 2px solid var(--ink); outline-offset: 2px; }
+.cal-foot { margin: 14px 0 0; font-size: 13px; color: var(--muted); }
+
+/* Filter */
+.filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.chip {
+  font-family: var(--font-body); font-size: 14px; font-weight: 500;
+  padding: 6px 14px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--line); background: transparent; color: var(--ink);
+}
+.chip:hover { border-color: var(--ink); }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+/* Tickets */
+.events { display: grid; gap: 12px; }
+.ticket { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; scroll-margin-top: 16px; }
+.ticket[open] { border-color: var(--ink); }
+.ticket > summary { display: grid; grid-template-columns: 84px minmax(0, 1fr) auto; list-style: none; cursor: pointer; border-radius: 12px; }
+.ticket > summary::-webkit-details-marker { display: none; }
+.stub {
+  background: var(--accent); color: var(--accent-ink);
+  border-radius: 11px 0 0 11px; padding: 14px 8px; text-align: center;
+  display: grid; place-content: center; gap: 0;
+}
+.stub .dd { font-family: var(--font-display); font-weight: 800; font-size: 2.2rem; line-height: 1; letter-spacing: -0.02em; }
+.stub .mm { font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; }
+.stub .wd2 { font-family: var(--font-mono); font-size: 11px; opacity: 0.85; }
+.info { border-left: 2px dashed var(--bg); padding: 14px 16px; min-width: 0; display: grid; gap: 4px; align-content: center; }
+.artist { font-family: var(--font-display); font-weight: 800; font-size: 1.4rem; line-height: 1.1; letter-spacing: -0.01em; margin: 0; overflow-wrap: anywhere; }
+.meta { font-size: 14px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 2px 10px; }
+.tag { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; border: 1px solid var(--line); border-radius: 4px; padding: 1px 6px; color: var(--ink); }
+.chev { align-self: center; padding-right: 16px; }
+.chev::before {
+  content: ""; display: block; width: 9px; height: 9px;
+  border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg); transition: transform 0.15s ease;
+}
+.ticket[open] .chev::before { transform: rotate(225deg); }
+
+.detail { padding: 4px 20px 20px 20px; display: grid; gap: 16px; border-top: 1px dashed var(--line); margin: 0 0 0 0; padding-top: 16px; }
+.why { margin: 0; max-width: 60ch; }
+.label { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin: 0 0 6px; }
+.songs { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.songs li { display: flex; align-items: center; gap: 10px; }
+.songs li::before {
+  content: ""; flex: none; width: 0; height: 0;
+  border-left: 9px solid var(--accent); border-top: 6px solid transparent; border-bottom: 6px solid transparent;
+}
+.songs .none { color: var(--muted); }
+.songs .none::before { display: none; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font-family: var(--font-body); font-weight: 600; font-size: 15px; text-decoration: none;
+  padding: 10px 18px; border-radius: 8px; border: 2px solid var(--ink);
+}
+.btn.primary { background: var(--ink); color: var(--bg); }
+.btn.ghost { background: transparent; color: var(--ink); }
+.btn:hover { transform: translateY(-1px); }
+.empty { color: var(--muted); padding: 24px 0; }
+footer { margin-top: 40px; font-size: 13px; color: var(--muted); }
+
+@media (max-width: 480px) {
+  .ticket > summary { grid-template-columns: 68px minmax(0, 1fr) auto; }
+  .stub .dd { font-size: 1.8rem; }
+  .artist { font-size: 1.2rem; }
+  .chev { padding-right: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chev::before { transition: none; }
+  .btn:hover { transform: none; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Zürich und Umgebung · Saison 26/27</div>
+    <h1>Mit mir ans <span>Konzert</span></h1>
+    <p class="intro">Hier sind die Konzerte und Events, bei denen ich dabei sein will. Klick auf einen Termin, hör dir meine Lieblingssongs an und sag mir, ob du mitkommst.</p>
+    <p class="demo-note"><strong>Beispieldaten.</strong> Künstler, Termine, Songs und Ticket-Links sind Platzhalter, bis deine echten Konzerte eingetragen sind.</p>
+  </header>
+
+  <div class="layout">
+    <aside class="cal" aria-label="Kalender">
+      <div class="cal-head">
+        <div class="cal-title" id="calTitle" aria-live="polite"></div>
+        <div class="cal-nav">
+          <button class="icon-btn" id="prev" type="button" aria-label="Vorheriger Monat">&#8249;</button>
+          <button class="icon-btn" id="next" type="button" aria-label="Nächster Monat">&#8250;</button>
+        </div>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+      <p class="cal-foot" id="calFoot"></p>
+    </aside>
+
+    <main>
+      <div class="filters" id="filters" role="group" aria-label="Nach Musikrichtung filtern"></div>
+      <div class="events" id="events"></div>
+    </main>
+  </div>
+
+  <footer>Alle Daten ohne Gewähr. Tickets gibt es nur über die verlinkten Anbieter.</footer>
+</div>
+
+<script>
+(function () {
+  var EVENTS = [
+    { id: 'fontaines', artist: 'Fontaines D.C.', date: '2026-11-12', time: '20:00', venue: 'Volkshaus', city: 'Zürich', genre: 'Indie',
+      why: 'Live noch besser als auf Platte. Perfekt, wenn du Lust auf laut und rau hast.',
+      songs: ['Starburster', 'Favourite', 'I Love You'], tickets: 'https://www.ticketcorner.ch/' },
+    { id: 'loyle', artist: 'Loyle Carner', date: '2026-11-20', time: '20:00', venue: 'Komplex 457', city: 'Zürich', genre: 'Hip-Hop',
+      why: 'Warmer, ehrlicher Hip-Hop. Gut zum Mitnicken, auch wenn du sonst nicht so viel Rap hörst.',
+      songs: ['Ottolenghi', 'Hate', 'Georgetown'], tickets: 'https://www.ticketcorner.ch/' },
+    { id: 'bonobo', artist: 'Bonobo', date: '2026-11-27', time: '22:00', venue: 'X-TRA', city: 'Zürich', genre: 'Electronic',
+      why: 'Elektronisch, aber mit Livemusikern. Zum Tanzen und zum Abtauchen.',
+      songs: ['Kerala', 'Cirrus', 'Linked'], tickets: 'https://www.ticketcorner.ch/' },
+    { id: 'kamasi', artist: 'Kamasi Washington', date: '2026-12-04', time: '20:30', venue: 'Moods', city: 'Zürich', genre: 'Jazz',
+      why: 'Spiritueller Jazz in kleinem Rahmen. Ein ruhigerer Abend zum Zuhören.',
+      songs: ['Truth', 'Fists of Fury', 'Change of the Guard'], tickets: 'https://www.ticketcorner.ch/' },
+    { id: 'gojira', artist: 'Gojira', date: '2026-12-11', time: '19:30', venue: 'Samsung Hall', city: 'Dübendorf', genre: 'Metal',
+      why: 'Schwere Riffs und riesige Lichtshow. Ohrenschutz mitbringen.',
+      songs: ['Stranded', 'Silvera', 'Amazonia'], tickets: 'https://www.ticketcorner.ch/' },
+    { id: 'silvester', artist: 'Silvester im Kaufleuten', date: '2026-12-31', time: '22:00', venue: 'Kaufleuten', city: 'Zürich', genre: 'Party',
+      why: 'Ins neue Jahr tanzen, zusammen mit möglichst vielen von euch.',
+      songs: [], tickets: 'https://www.ticketcorner.ch/' },
+    { id: 'dua', artist: 'Dua Lipa', date: '2027-01-22', time: '20:00', venue: 'Hallenstadion', city: 'Zürich', genre: 'Pop',
+      why: 'Große Show, große Hits. Hier darf man laut mitsingen.',
+      songs: ['Houdini', 'Levitating', 'Training Season'], tickets: 'https://www.ticketcorner.ch/' },
+    { id: 'sophie', artist: 'Sophie Hunger', date: '2027-02-13', time: '20:00', venue: 'Volkshaus', city: 'Zürich', genre: 'Folk',
+      why: 'Eine der besten Live-Stimmen der Schweiz. Intim und überraschend.',
+      songs: ['Refuge', 'Teenage Spirit', 'Le Vent Nous Portera'], tickets: 'https://www.ticketcorner.ch/' }
+  ];
+
+  var MONTHS = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+  var MON_SHORT = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+  var WD = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+  var WD_LONG = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+
+  function parse(s) { var p = s.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
+
+  EVENTS.sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+
+  var today = new Date(); today.setHours(0, 0, 0, 0);
+  var upcoming = EVENTS.filter(function (e) { return parse(e.date) >= today; });
+  var start = parse((upcoming[0] || EVENTS[0]).date);
+  var view = { y: start.getFullYear(), m: start.getMonth() };
+  var filter = 'Alle';
+  var selected = null;
+
+  var elTitle = document.getElementById('calTitle');
+  var elGrid = document.getElementById('calGrid');
+  var elFoot = document.getElementById('calFoot');
+  var elFilters = document.getElementById('filters');
+  var elEvents = document.getElementById('events');
+
+  function visible() {
+    return EVENTS.filter(function (e) { return filter === 'Alle' || e.genre === filter; });
+  }
+
+  function renderFilters() {
+    var genres = ['Alle'];
+    EVENTS.forEach(function (e) { if (genres.indexOf(e.genre) < 0) genres.push(e.genre); });
+    elFilters.innerHTML = genres.map(function (g) {
+      return '<button type="button" class="chip" data-genre="' + esc(g) + '" aria-pressed="' + (g === filter) + '">' + esc(g) + '</button>';
+    }).join('');
+  }
+
+  function renderCal() {
+    elTitle.textContent = MONTHS[view.m] + ' ' + view.y;
+    var first = new Date(view.y, view.m, 1);
+    var lead = (first.getDay() + 6) % 7;
+    var dim = new Date(view.y, view.m + 1, 0).getDate();
+    var byDay = {};
+    var count = 0;
+    visible().forEach(function (e) {
+      var d = parse(e.date);
+      if (d.getFullYear() === view.y && d.getMonth() === view.m) {
+        (byDay[d.getDate()] = byDay[d.getDate()] || []).push(e);
+        count++;
+      }
+    });
+    var html = WD.map(function (w) { return '<div class="wd">' + w + '</div>'; }).join('');
+    for (var i = 0; i < lead; i++) html += '<div class="day muted" aria-hidden="true"></div>';
+    for (var d = 1; d <= dim; d++) {
+      var evs = byDay[d];
+      var isToday = today.getFullYear() === view.y && today.getMonth() === view.m && today.getDate() === d;
+      if (evs) {
+        var sel = evs.some(function (e) { return e.id === selected; });
+        var label = d + '. ' + MONTHS[view.m] + ': ' + evs.map(function (e) { return e.artist; }).join(', ');
+        html += '<button type="button" class="day' + (sel ? ' selected' : '') + (isToday ? ' today' : '') + '" data-id="' + esc(evs[0].id) + '" aria-label="' + esc(label) + '">' + d + '</button>';
+      } else {
+        html += '<div class="day' + (isToday ? ' today' : '') + '">' + d + '</div>';
+      }
+    }
+    elGrid.innerHTML = html;
+    elFoot.textContent = count === 0 ? 'In diesem Monat steht nichts an.' : (count === 1 ? '1 Termin in diesem Monat.' : count + ' Termine in diesem Monat.');
+  }
+
+  function renderEvents() {
+    var list = visible();
+    if (!list.length) { elEvents.innerHTML = '<p class="empty">Für diese Musikrichtung ist noch nichts eingetragen.</p>'; return; }
+    elEvents.innerHTML = list.map(function (e) {
+      var d = parse(e.date);
+      var songs = e.songs.length
+        ? e.songs.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('')
+        : '<li class="none">Für diesen Termin gibt es keine Playlist.</li>';
+      var spotify = 'https://open.spotify.com/search/' + encodeURIComponent(e.artist);
+      return '<details class="ticket" id="ev-' + esc(e.id) + '" data-id="' + esc(e.id) + '"' + (e.id === selected ? ' open' : '') + '>' +
+        '<summary>' +
+          '<div class="stub"><span class="mm">' + MON_SHORT[d.getMonth()] + '</span><span class="dd">' + d.getDate() + '</span><span class="wd2">' + WD_LONG[d.getDay()].slice(0, 2) + '</span></div>' +
+          '<div class="info"><h3 class="artist">' + esc(e.artist) + '</h3>' +
+            '<div class="meta"><span>' + esc(e.time) + ' Uhr</span><span>' + esc(e.venue) + ', ' + esc(e.city) + '</span><span class="tag">' + esc(e.genre) + '</span></div></div>' +
+          '<div class="chev" aria-hidden="true"></div>' +
+        '</summary>' +
+        '<div class="detail">' +
+          '<p class="why">' + esc(e.why) + '</p>' +
+          '<div><p class="label">Meine Lieblingssongs (Beispiel)</p><ul class="songs">' + songs + '</ul></div>' +
+          '<div class="actions">' +
+            '<a class="btn primary" href="' + esc(e.tickets) + '" target="_blank" rel="noopener noreferrer">Tickets ansehen</a>' +
+            '<a class="btn ghost" href="' + esc(spotify) + '" target="_blank" rel="noopener noreferrer">Auf Spotify anhören</a>' +
+          '</div>' +
+        '</div>' +
+      '</details>';
+    }).join('');
+  }
+
+  function select(id, scroll) {
+    var e = EVENTS.filter(function (x) { return x.id === id; })[0];
+    if (!e) return;
+    selected = id;
+    var d = parse(e.date);
+    view = { y: d.getFullYear(), m: d.getMonth() };
+    renderCal();
+    var el = document.getElementById('ev-' + id);
+    if (el) {
+      el.open = true;
+      if (scroll) {
+        var smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        el.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
+      }
+    }
+  }
+
+  function shift(delta) {
+    var d = new Date(view.y, view.m + delta, 1);
+    view = { y: d.getFullYear(), m: d.getMonth() };
+    renderCal();
+  }
+
+  document.getElementById('prev').addEventListener('click', function () { shift(-1); });
+  document.getElementById('next').addEventListener('click', function () { shift(1); });
+
+  elGrid.addEventListener('click', function (ev) {
+    var b = ev.target.closest('button[data-id]');
+    if (b) select(b.getAttribute('data-id'), true);
+  });
+
+  elFilters.addEventListener('click', function (ev) {
+    var b = ev.target.closest('button[data-genre]');
+    if (!b) return;
+    filter = b.getAttribute('data-genre');
+    renderFilters();
+    renderEvents();
+    renderCal();
+  });
+
+  elEvents.addEventListener('toggle', function (ev) {
+    var t = ev.target;
+    if (t.open && t.getAttribute('data-id') && t.getAttribute('data-id') !== selected) {
+      select(t.getAttribute('data-id'), false);
+    }
+  }, true);
+
+  renderFilters();
+  renderEvents();
+  renderCal();
+})();
+</script>
+
+</body></html>
